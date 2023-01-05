@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<style>
+  .btn {
+    width: 400px;
+    height: 500px;
+    background-color: aquamarine;
+  }
+</style>
+
+<body>
+  <div class="btn">打开菜单</div>
+</body>
+<script>
+
+  class ContextMenu {
+    constructor(cls, opt) {
+      let context = document.querySelector(cls);
+      this.cls = cls;
+      context.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        this.mask = this.addStyle(e, opt);
+        this.createContent(e, opt);
+      });
+    }
+    addStyle(e, items) {
+      const div = document.createElement('div');
+      const style = document.createElement('style');
+      div.className = 'menu-mask-wrap';
+      div.innerHTML = `
+    <div class="menu-content">
+    </div>
+    `;
+      style.innerHTML = `
+    .menu-mask-wrap {
+    position: fixed;
+    z-index: 999;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+  .menu-content {
+    position: fixed;
+    width: 200px;
+    background: #eeeeee;
+    border: 1px solid #ddd;
+  }
+
+  .menu-content .menu-item {
+    padding: 2px 10px;
+    cursor: pointer;
+  }
+
+  .menu-content .menu-item:hover {
+    background: #ffffff;
+  }
+    `;
+      document.body.appendChild(style);
+      document.body.appendChild(div);
+      return div;
+    }
+    createContent(e, items, parent) {
+      const div = this.mask.querySelector('.menu-content');
+      const div = document.createElement('div');
+      let menuItemStr = ``;
+      items.forEach(item => menuItemStr += `<div class="menu-item">${item.content}</div>`)
+      div.innerHTML = menuItemStr;
+      div.style.top = `${e.pageY}px`;
+      div.style.left = `${e.pageX}px`;
+      div.addEventListener('click', e => {
+        e.preventDefault();
+        if (e.target.getAttribute('class').includes('menu-mask-wrap')) {
+          document.body.removeChild(div);
+        }
+      });
+      div.oncontextmenu = e => e.preventDefault();
+      const menuItems = div.querySelectorAll('.menu-item');
+      menuItems.forEach((v, i) => {
+        v.onclick = items[i].callback;
+        // if (items[i].children && items[i].children.length && items[i].children.length > 0) {
+        //   v.onmouseover = (e) => {
+        //     this.createContent(e, items[i].children)
+        //   }
+        // }
+      }, true);
+    }
+  }
+
+  new ContextMenu('.btn', [
+    {
+      content: 'hhh',
+      disabled: true,
+      // children: [{
+      //   content: 'hhh1',
+      //   callback: e => {
+      //     console.log('hhh1');
+      //   }
+      // }],
+      callback: e => {
+        console.log('hhh');
+      }
+    },
+    {
+      content: 'kkk',
+      callback: e => {
+        console.log('kkk');
+      }
+    }
+  ]);
+
+
+
+</script>
+
+</html>

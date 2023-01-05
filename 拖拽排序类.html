@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="./src/drag-dom/index.js"></script>
+  <title>Document</title>
+</head>
+<style>
+  .drag-wrap {
+    user-select: none;
+  }
+
+  .drag-item {
+    width: 100px;
+    height: 100px;
+    margin: 10px;
+    background: rgb(84, 255, 84);
+    display: inline-block;
+    font-size: 50px;
+    font-weight: 900;
+    text-align: center;
+    line-height: 80px;
+  }
+
+  .drag-trigger {
+    width: 100px;
+    height: 20px;
+    background: rgb(255, 114, 114);
+  }
+
+  .move-target {
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+</style>
+
+<body>
+  <h1>hhhhhhhhhh</h1>
+  <div class="drag-wrap">
+    <div class="drag-item">
+      <div class="drag-trigger"></div>
+      <div>1</div>
+    </div>
+    <div class="drag-item">
+      <div class="drag-trigger"></div>
+      <div>2</div>
+    </div>
+    <div class="drag-item">
+      <div class="drag-trigger"></div>
+      <div>3</div>
+    </div>
+    <div class="drag-item">
+      <div class="drag-trigger"></div>
+      <div>4</div>
+    </div>
+    <div class="drag-item">
+      <div class="drag-trigger"></div>
+      <div>5</div>
+    </div>
+    <div class="drag-item">
+      <div class="drag-trigger"></div>
+      <div>6</div>
+    </div>
+    <div class="drag-item">
+      <div class="drag-trigger"></div>
+      <div>7</div>
+    </div>
+    <div class="drag-item">
+      <div class="drag-trigger"></div>
+      <div>8</div>
+    </div>
+    <div class="drag-item">
+      <div class="drag-trigger"></div>
+      <div>9</div>
+    </div>
+    <div class="drag-item">
+      <div class="drag-trigger"></div>
+      <div>10</div>
+    </div>
+  </div>
+</body>
+<script>
+
+
+
+  let source = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  let a = new Draggable({
+    wrap: document.querySelector('.drag-wrap'), // 容器的DOM
+    contentClass: 'drag-item', // 拖动元素类名，应该是容器的直接子节点
+    triggerClass: 'drag-trigger', // 拖动的触发器，只有拖动该类名的DOM才能实现拖动
+    source: source, // 若需要拖动排序，传入的排序数组
+    afterDragCallback: (res) => {
+      // 拖动后回调，回调参数包括拖动元素索引、放置元素索引、排序后的数组
+      console.log(res.source === source);
+      console.log(source);
+    }
+  });
+
+  // dragInit();
+  function dragInit(wrapCls) {
+    let doc;
+    const items = document.querySelectorAll(".drag-wrap .drag-item");
+    const triggers = document.querySelectorAll(".drag-wrap .drag-trigger");
+    let curDragNode = null;
+    for (const trigger of triggers) {
+      trigger.setAttribute("draggable", true);
+      trigger.ondragleave = (e) => {
+        let target = getAncestorDom(trigger, "drag-item", "drag-wrap");
+        if (target) {
+          target.style.opacity = "1";
+        }
+      };
+      trigger.ondragover = (e) => {
+        e.preventDefault();
+        let target = getAncestorDom(trigger, "drag-item", "drag-wrap");
+        if (target) {
+          target.style.opacity = "0.5";
+        }
+      };
+      trigger.ondragstart = (e) => {
+        let target = getAncestorDom(trigger, "drag-item", "drag-wrap");
+        if (target) {
+          curDragNode = target;
+          target.style.opacity = "0.5";
+        }
+      };
+      trigger.ondragend = (e) => {
+        let target = getAncestorDom(trigger, "drag-item", "drag-wrap");
+        if (target) {
+          curDragNode = trigger;
+          target.style.opacity = "1";
+        }
+      };
+      trigger.ondrop = (e) => {
+        let target = getAncestorDom(trigger, "drag-item", "drag-wrap");
+        let wrap = getAncestorDom(curDragNode, "drag-wrap");
+        let children = wrap.querySelectorAll(".drag-trigger");
+        // let dropTrigger = getAncestorDom(e.target, "drag-trigger");
+        let dropTrigger = e.target;
+        let drop = false;
+        children.forEach((v) => {
+          if (v === dropTrigger) {
+            drop = true;
+          }
+        });
+        if (!drop) {
+          console.log("不允许跃出最近的drag-wrap");
+          target.style.opacity = 1;
+          return;
+        }
+        if (target) {
+          // e.target 是 被放置的元素
+          // curDragNode 是拖动的元素
+          if (curDragNode !== null && curDragNode !== target) {
+            target.style.opacity = "0.5";
+            let div = document.createElement("div");
+            curDragNode.parentNode.insertBefore(div, curDragNode);
+            target.parentNode.insertBefore(curDragNode, target);
+            div.parentNode.replaceChild(target, div);
+            target.style.opacity = "1";
+          }
+        }
+      };
+    }
+  }
+
+  /**
+   * 获取该DOM最近的含有指定class的祖先元素
+   * 
+   * @param {DOM} dom 需要寻找祖先节点的DOM节点
+   * @param {string} cls 祖先节点类名
+   * @returns DOM || {}
+   */
+
+
+  function getAncestorDom(dom, cls, limit) {
+    try {
+      if (dom.parentNode) {
+        let str = dom.parentNode.getAttribute("class") || "";
+        if (str.includes(cls)) {
+          return dom.parentNode;
+        } else if (str.includes(limit)) {
+          return null;
+        } else {
+          return getAncestorDom(dom.parentNode, cls, limit);
+        }
+      } else {
+        return null;
+      }
+    } catch (error) {
+      return null
+    }
+  }
+
+</script>
+
+</html>

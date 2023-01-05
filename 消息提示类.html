@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="./src/notify/index.js"></script>
+  <title>Document</title>
+</head>
+
+<body>
+  <button onclick="">通知</button>
+</body>
+
+</html>
+<script src="">
+  let globalConfig = {
+    className: string, // 提示窗口自定义类名，默认为空
+    style: string, // 提示窗口自定义样式，默认为空
+    duration: number,  // 提示窗口关闭时间，默认3000(毫秒)
+    top: number, // 提示窗口到顶部距离，默认为10
+  }
+
+  let config = {
+    className: string, // 提示窗口自定义类名
+    style: string, // 提示窗口自定义样式
+    duration: number,  // 提示窗口关闭时间，默认3000(毫秒)
+    top: number, // 提示窗口到顶部距离，默认为10
+    bottom: number, // 提示窗口到顶部距离，默认为auto
+    left: number, // 提示窗口到顶部距离，默认为auto
+    right: number, // 提示窗口到顶部距离，默认为auto
+  }
+
+
+  let notify = new Notify(
+    globalConfig,  /* 全局默认设置 */
+    mode /* 简单模式(simple)和复杂模式(hard) */
+  );
+  // 实例方法: success error, wran, info
+  notify.success(msg, duration || config);
+  notify.error(msg, duration || config);
+  notify.warn(msg, duration || config);
+  notify.info(msg, duration || config);
+  // 实例方法: loading
+  let unload = notify.loading(msg); /* 打开正在加载信息窗口 */
+  unload(type, msg, duration || config); /* 异步关闭 */
+</script>
