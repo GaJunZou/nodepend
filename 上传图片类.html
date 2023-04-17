@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <button>上传</button>
+  <img class="preview" src="" alt="">
+</body>
+<script>
+  let btn = document.querySelector('button');
+  btn.onclick = () => {
+    let input = document.createElement('input');
+    input.setAttribute('type', 'file');
+    input.setAttribute('accept', 'image/*');
+    input.setAttribute('name', 'uploader-input');
+    // document.body.append(input);
+    input.click();
+    input.onchange = (e) => {
+      let $file = e.currentTarget;
+      let fd = new FormData();
+      let file = $file.files;
+      fd = new FormData();
+      fd.append(file[0].name, file[0]);
+      let fr = new FileReader();
+      fr.readAsDataURL(file[0]);
+      fr.onload = e => {
+        console.log(e.target);
+        document.querySelector('.preview').setAttribute('src', e.target.result)
+      }
+    }
+  }
+</script>
+
+</html>

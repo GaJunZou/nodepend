@@ -1,3 +1,35 @@
+/**
+ * 获取该DOM最近的含有指定class的祖先元素
+ *
+ * @param {DOM} dom 需要寻找祖先节点的DOM节点
+ * @param {string} cls 祖先节点类名
+ * @returns DOM || {}
+ */
+
+function getAncestorDom(dom, cls, limit) {
+  // debugger;
+  try {
+    if ((dom.getAttribute("class") || "").includes(cls)) {
+      return dom;
+    }
+    if (dom.parentNode) {
+      let str = dom.parentNode.getAttribute("class") || "";
+      if (str.includes(cls)) {
+        return dom.parentNode;
+      } else if (str.includes(limit)) {
+        return null;
+      } else {
+        return getAncestorDom(dom.parentNode, cls, limit);
+      }
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
+
 class Draggable {
   constructor(options) {
     this.wrap = options.wrap;
@@ -52,24 +84,23 @@ class Draggable {
     let dropTarget;
     let moveTarget;
     let dragTargetIndex;
+    let dragTargetRect;
     this.wrap.addEventListener("pointerdown", (e) => {
       if (e.pointerType === "mouse" && e.button !== 0) {
         return;
       }
-      if (e.target === this.parent) {
-        return;
-      }
-      this.wrap.setPointerCapture(e.pointerId);
-      let cls = e.target.getAttribute("class");
-      if (cls && cls.includes(this.triggerClass)) {
+      if (getAncestorDom(e.target, this.triggerClass)) {
+        this.wrap.setPointerCapture(e.pointerId);
         console.log("点击");
-        dragTarget = e.path.find((v) =>
-          v.getAttribute("class").includes(this.contentClass)
-        );
+        dragTarget = getAncestorDom(e.target, this.contentClass);
         isOnPointer = true;
         moveTarget = dragTarget.cloneNode(true);
-        moveTarget.className += " move-target";
+        dragTargetRect = dragTarget.getBoundingClientRect();
         moveTarget.style.opacity = "0";
+        moveTarget.style.position = "fixed";
+        moveTarget.style.top = `0px`;
+        moveTarget.style.left = `0px`;
+        this.wrap.style.userSelect = "none";
         document.body.appendChild(moveTarget);
         dragTargetIndex = this.list.findIndex((l) => l.ele === dragTarget);
         this.dragTargetIndex = dragTargetIndex;
@@ -84,20 +115,27 @@ class Draggable {
         for (let i = 0; i < this.list.length; i++) {
           let { ele, rect } = this.list[i];
           let index = this.list.findIndex((l) => l.ele === ele);
-          if (ele !== dragTarget) {
+          if (ele !== dragTarget /* 不与自己比较 */) {
             if (
+              /* 判断鼠标指针与drag-item位置 */
               rect.x < e.x &&
-              e.x < rect.x + rect.height &&
+              e.x < rect.x + rect.width &&
               rect.y < e.y &&
-              e.y < rect.y + rect.width
+              e.y < rect.y + rect.height
             ) {
+              console.log("被交换：", {
+                ele,
+                rect,
+              });
+              console.log("交换：", {
+                e,
+              });
               let swapNode =
                 index > dragTargetIndex ? ele.nextElementSibling : ele;
               this.wrap.insertBefore(dragTarget, swapNode);
               dragTargetIndex = index;
               console.log("交换");
               this.getRect();
-              // debugger
               dragTarget.style.transition = "none";
               dragTarget.style.transform = `translate3d(${
                 ele.offsetLeft - dragTarget.offsetLeft
@@ -124,6 +162,7 @@ class Draggable {
         this.dropTargetIndex = dragTargetIndex;
         moveTarget.remove();
         dragTarget.style.opacity = null;
+        this.wrap.style.userSelect = "auto";
         console.log("停止");
         this.afterDrag();
       }

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div class="wrapper">
+    <div class="crop-image">
+      <div class="crop-area">
+        <div class="top">
+          <div class="point"></div>
+          <div class="point"></div>
+          <div class="point"></div>
+        </div>
+        <div class="middle">
+          <div class="point"></div>
+          <div class="point"></div>
+        </div>
+        <div class="bottom">
+          <div class="point"></div>
+          <div class="point"></div>
+          <div class="point"></div>
+        </div>
+      </div>
+      <img class="crop-target" crossOrigin="Anonymous" />
+    </div>
+    <button class="btn">截取</button>
+    <img class="final-image" crossOrigin="Anonymous" src="" />
+  </div>
+</body>
+
+</html>
+
+
+<script>
+  function noPointer(f) {
+    let pointList = document.querySelectorAll(".crop-image .point");
+    pointList.forEach((v) => {
+      if (f) {
+        v.style.width = "0px";
+      } else {
+        v.style.width = "10px";
+      }
+    });
+  }
+
+  function toParentDistance(target, value) {
+    let v = target.style[value].split("px")[0];
+    if (!v) {
+      console.log(target);
+    }
+    return Number(v);
+  }
+  class CropImage {
+    constructor(src) {
+      this.src = src;
+      this.init();
+    }
+    init() {
+      this.handleCropImage();
+      this.handleCropTarget();
+      this.handleButton();
+      this.handleCropArea();
+    }
+    after(cb) {
+      cb();
+    }
+    handleCropArea() {
+      let isDrag = false;
+      let startEvent;
+      let cropArea = document.querySelector('.crop-area');
+      console.log(cropArea);
+      cropArea.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        if (e.pointerType === "mouse" && e.button !== 0) {
+          return;
+        }
+        isDrag = true;
+        cropArea = document.querySelector(".crop-area");
+        startEvent = e;
+      });
+      cropArea.addEventListener('pointermove', e => {
+        if (isDrag) {
+          let movex = e.clientX - startEvent.clientX;
+          let movey = e.clientY - startEvent.clientY;
+          // console.log("movex:", movex, "movey:", movey);
+          /* bug:经过边界时 e.target 会变成边界的 target */
+          this.top = toParentDistance(e.target, "top") + movey;
+          this.left = toParentDistance(e.target, "left") + movex;
+          cropArea.style.top = this.top + "px";
+          cropArea.style.left = this.left + "px";
+          startEvent = e;
+        }
+      });
+      cropArea.addEventListener('pointerup', e => {
+        if (isDrag) {
+          isDrag = false;
+        }
+      });
+      cropArea.addEventListener('pointerleave', e => {
+        if (isDrag) {
+          isDrag = false;
+        }
+      });
+    }
+    handleButton() {
+      let btn = document.querySelector('.btn');
+      btn.addEventListener('click', e => {
+        this.newSrc = this.crop();
+        setTimeout(() => {
+          document.querySelector('.final-image').setAttribute('src', this.newSrc);
+          this.after(this.newSrc);
+        }, 100);
+      })
+    }
+    handleCropTarget() {
+      let cropTarget = document.querySelector('.crop-target');
+      cropTarget.setAttribute('src', this.src);
+      cropTarget.addEventListener('dragstart', e => {
+        e.stopPropagation();
+        e.preventDefault();
+      });
+    }
+    handleCropImage() {
+      let isOnPointer = false;
+      let startEvent;
+      let cropArea;
+      let rect; /* todo:在crop-image位置、距离改变时要重新获取 */
+      let cropImage = document.querySelector('.crop-image');
+      cropImage.addEventListener('pointerdown', e => {
+        e.stopPropagation();
+        if (e.pointerType === "mouse" && e.button !== 0) {
+          return;
+        }
+        if (!rect) {
+          rect = document.querySelector(".crop-image").getBoundingClientRect();
+        }
+        isOnPointer = true;
+        this.isShot = true;
+        cropArea = document.querySelector(".crop-area");
+        startEvent = e;
+      });
+      cropImage.addEventListener('pointermove', e => {
+        e.stopPropagation();
+        if (isOnPointer) {
+          let movex = e.clientX - startEvent.clientX;
+          let movey = e.clientY - startEvent.clientY;
+          if (movex > 0) {
+            cropArea.style.left = startEvent.clientX - rect.x + "px";
+          } else {
+            cropArea.style.left = e.clientX - rect.x + "px";
+          }
+          if (movey > 0) {
+            cropArea.style.top = startEvent.clientY - rect.y + "px";
+          } else {
+            cropArea.style.top = e.clientY - rect.y + "px";
+          }
+          // if (cropArea.style.top === "3px") {
+          //   console.log(e);
+          //   debugger;
+          // }
+          cropArea.style.width = Math.abs(movex) + "px";
+          cropArea.style.height = Math.abs(movey) + "px";
+          this.width = Math.abs(movex);
+          this.height = Math.abs(movey);
+          if (this.width < 30 || this.height < 30) {
+            noPointer(true);
+          } else {
+            noPointer(false);
+          }
+        }
+      });
+      cropImage.addEventListener('pointerup', e => {
+        e.stopPropagation();
+        if (isOnPointer) {
+          console.log("up or leave");
+          isOnPointer = false;
+          this.isShot = false;
+        }
+      });
+      cropImage.addEventListener('pointerleave', e => {
+        e.stopPropagation();
+        if (isOnPointer) {
+          console.log("up or leave");
+          isOnPointer = false;
+          this.isShot = false;
+        }
+      });
+    }
+
+    crop() {
+      let imgDom = document.querySelector(".crop-target");
+      let scale = imgDom.naturalWidth / imgDom.width;
+      let left = parseInt(this.left * scale);
+      let top = parseInt(this.top * scale);
+      let width = parseInt(this.width * scale);
+      let height = parseInt(this.height * scale);
+      let canvas = document.createElement("canvas");
+      canvas.setAttribute("width", this.width);
+      canvas.setAttribute("height", this.height);
+      let ctx = canvas.getContext("2d");
+      ctx.drawImage(imgDom, left, top, width, height, 0, 0, this.width, this.height);
+      const url = canvas.toDataURL("image/png");
+      return url;
+    }
+  }
+
+  let crop = new CropImage('https://picx.zhimg.com/80/v2-bd96673b7cf30ff2f35506a7185fcb11_720w.webp?source=1940ef5c');
+  crop.after((src) => {
+    console.log(src);
+  });
+</script>
+
+
+<style>
+  .wrapper {
+    width: 800px;
+  }
+
+  .crop-image {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .crop-area {
+    position: absolute;
+    box-shadow: 0 0 0 9999px;
+    /* border: 1px solid #003e6f8c; */
+    color: #000000aa;
+    user-select: none;
+    cursor: move;
+    overflow: visible !important;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 1px dashed rgb(24, 144, 255);
+    width: 0;
+    height: 0;
+  }
+
+  .top,
+  .bottom,
+  .middle {
+    overflow: visible !important;
+    width: 100%;
+    /* height: 10px; */
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .point {
+    width: 10px;
+    height: 10px;
+    background-color: rgb(24, 144, 255);
+    border-radius: 50%;
+    position: relative;
+  }
+
+  .top>div:first-child {
+    top: -5px;
+    left: -5px;
+  }
+
+  .top>div:nth-child(2) {
+    top: -5px;
+  }
+
+  .top>div:last-child {
+    top: -5px;
+    right: -5px;
+  }
+
+  .bottom>div:first-child {
+    bottom: -5px;
+    left: -5px;
+  }
+
+  .bottom>div:nth-child(2) {
+    bottom: -5px;
+  }
+
+  .bottom>div:last-child {
+    bottom: -5px;
+    right: -5px;
+  }
+
+  .middle>div:first-child {
+    left: -5px;
+  }
+
+  .middle>div:last-child {
+    right: -5px;
+  }
+
+  .border-t:hover {
+    cursor: n-resize !important;
+  }
+
+  .border-b:hover {
+    cursor: n-resize !important;
+  }
+
+  .border-l:hover {
+    cursor: e-resize !important;
+  }
+
+  .border-r:hover {
+    cursor: e-resize !important;
+  }
+
+  img {
+    width: 100%;
+  }
+</style>
